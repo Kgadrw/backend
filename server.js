@@ -13,6 +13,9 @@ import { errorHandler, notFound } from './middlewares/error.middleware.js';
 import User from './models/user.model.js';
 import crypto from 'crypto';
 
+// Load environment variables first
+dotenv.config();
+
 // Import routes
 import authRoutes from './routes/auth.routes.js';
 import artistRoutes from './routes/artist.routes.js';
@@ -22,10 +25,7 @@ import commentRoutes from './routes/comment.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 
-// Load environment variables
-dotenv.config();
-
-// Connect to database
+// Connect to database (dotenv.config() already called at top)
 connectDB();
 
 // Initialize Express app
@@ -100,7 +100,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Session configuration
-app.use(session({
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'my_super_secret_session_key',
   resave: false,
   saveUninitialized: false,
@@ -109,7 +109,24 @@ app.use(session({
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
   },
-}));
+};
+
+// Use MongoDB session store in production if available
+if (process.env.MONGODB_URI && process.env.NODE_ENV === 'production') {
+  try {
+    const MongoStore = (await import('connect-mongo')).default;
+    sessionConfig.store = MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      ttl: 24 * 60 * 60, // 24 hours
+    });
+    console.log('✅ Using MongoDB session store');
+  } catch (error) {
+    console.log('⚠️  MongoDB session store not available, using memory store');
+    console.log('   Install connect-mongo for production: npm install connect-mongo');
+  }
+}
+
+app.use(session(sessionConfig));
 
 // Passport initialization
 app.use(passport.initialize());
