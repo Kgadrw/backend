@@ -48,7 +48,7 @@ export const getArtworks = async (req, res, next) => {
     }
 
     const artworks = await Artwork.find(query)
-      .populate('artistId', '_id name avatar')
+      .populate('artistId', '_id name avatar isVerified')
       .select('-ownershipDocument') // Exclude ownership document from public listings
       .sort(sort)
       .skip(skip)
@@ -80,7 +80,7 @@ export const getArtwork = async (req, res, next) => {
   try {
     const artwork = await Artwork.findById(req.params.id).populate(
       'artistId',
-      'name email avatar'
+      'name email avatar isVerified'
     );
 
     if (!artwork) {

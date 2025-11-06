@@ -16,7 +16,7 @@ export const getArtistProfile = async (req, res, next) => {
     // Try to find artist profile
     const artistProfile = await ArtistProfile.findOne({
       userId: req.params.id,
-    }).populate('userId', 'name email avatar');
+    }).populate('userId', 'name email avatar isVerified');
 
     if (artistProfile) {
       // User is an artist - return artist profile with artworks
@@ -25,7 +25,7 @@ export const getArtistProfile = async (req, res, next) => {
         artistId: req.params.id,
         status: 'PUBLISHED'
       })
-        .populate('artistId', '_id name avatar')
+        .populate('artistId', '_id name avatar isVerified')
         .sort({ createdAt: -1 })
         .limit(12);
 
@@ -34,7 +34,7 @@ export const getArtistProfile = async (req, res, next) => {
         artworks = await Artwork.find({ 
           artistId: req.params.id
         })
-          .populate('artistId', '_id name avatar')
+          .populate('artistId', '_id name avatar isVerified')
           .sort({ createdAt: -1 })
           .limit(12);
       }
@@ -64,9 +64,9 @@ export const getArtistProfile = async (req, res, next) => {
             _id: { $in: artworkIds },
             status: 'PUBLISHED'
           })
-            .populate('artistId', '_id name avatar')
-            .sort({ createdAt: -1 })
-            .limit(12)
+          .populate('artistId', '_id name avatar isVerified')
+          .sort({ createdAt: -1 })
+          .limit(12)
             .select('title images price currency category')
         : [];
 
@@ -78,6 +78,7 @@ export const getArtistProfile = async (req, res, next) => {
             name: user.name,
             email: user.email,
             avatar: user.avatar,
+            isVerified: user.isVerified,
           },
           bio: '',
           location: '',
@@ -151,7 +152,7 @@ export const updateArtistProfile = async (req, res, next) => {
 
     // Populate user data for response
     const populatedProfile = await ArtistProfile.findById(artistProfile._id)
-      .populate('userId', 'name email avatar');
+      .populate('userId', 'name email avatar isVerified');
 
     res.json({
       success: true,
