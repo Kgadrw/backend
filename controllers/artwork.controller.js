@@ -1,5 +1,7 @@
 import Artwork from '../models/artwork.model.js';
 import ArtistProfile from '../models/artist.model.js';
+import Newsletter from '../models/newsletter.model.js';
+import { sendNewArtworkEmail } from '../utils/emailService.js';
 
 // @desc    Get all artworks
 // @route   GET /api/artworks
@@ -22,7 +24,17 @@ export const getArtworks = async (req, res, next) => {
     }
 
     if (req.query.search) {
-      query.$text = { $search: req.query.search };
+      const searchTerm = req.query.search.trim();
+      if (searchTerm) {
+        // Escape special regex characters
+        const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Use regex for flexible search on title and description only (artworks only)
+        // Case-insensitive search that matches title or description
+        query.$or = [
+          { title: { $regex: escapedSearchTerm, $options: 'i' } },
+          { description: { $regex: escapedSearchTerm, $options: 'i' } }
+        ];
+      }
     }
 
     // Sort options
@@ -36,7 +48,7 @@ export const getArtworks = async (req, res, next) => {
     }
 
     const artworks = await Artwork.find(query)
-      .populate('artistId', 'name avatar')
+      .populate('artistId', '_id name avatar')
       .sort(sort)
       .skip(skip)
       .limit(limit);
@@ -125,6 +137,52 @@ export const createArtwork = async (req, res, next) => {
       'artistId',
       'name avatar'
     );
+
+    // Send email notifications to newsletter subscribers (async, don't wait)
+    if (populatedArtwork.status === 'PUBLISHED') {
+      console.log('📧 Starting email notification process for new artwork...');
+      Newsletter.find({ isActive: true })
+        .then((subscribers) => {
+          console.log(`📧 Found ${subscribers.length} active subscribers`);
+          if (subscribers.length === 0) {
+            console.log('⚠️ No active subscribers found. Skipping email notifications.');
+            return;
+          }
+
+          const artistName = populatedArtwork.artistId?.name || 'Our Artist';
+          let emailPromises = [];
+          
+          subscribers.forEach((subscriber) => {
+            const emailPromise = sendNewArtworkEmail(
+              subscriber.email,
+              populatedArtwork,
+              artistName
+            ).then(() => {
+              console.log(`✅ Email sent successfully to ${subscriber.email}`);
+            }).catch((error) => {
+              console.error(`❌ Error sending email to ${subscriber.email}:`, error.message || error);
+              if (error.code === 'EAUTH') {
+                console.error('   → Authentication failed. Check EMAIL_PASSWORD in .env file.');
+              } else if (error.code === 'ECONNECTION') {
+                console.error('   → Connection failed. Check internet connection.');
+              }
+            });
+            emailPromises.push(emailPromise);
+          });
+
+          // Wait for all emails to be sent (but don't block the response)
+          Promise.allSettled(emailPromises).then((results) => {
+            const successful = results.filter(r => r.status === 'fulfilled').length;
+            const failed = results.filter(r => r.status === 'rejected').length;
+            console.log(`📧 Email notification summary: ${successful} sent, ${failed} failed`);
+          });
+        })
+        .catch((error) => {
+          console.error('❌ Error fetching newsletter subscribers:', error.message || error);
+        });
+    } else {
+      console.log(`⚠️ Artwork status is "${populatedArtwork.status}", not PUBLISHED. Skipping email notifications.`);
+    }
 
     res.status(201).json({
       success: true,

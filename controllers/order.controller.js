@@ -20,7 +20,14 @@ export const createOrder = async (req, res, next) => {
       return res.status(400).json({ message: 'Artwork is already sold' });
     }
 
-    // Create order
+    // Prevent users from ordering their own artwork
+    if (artwork.artistId.toString() === req.user._id.toString()) {
+      return res.status(403).json({ 
+        message: 'You cannot order your own artwork' 
+      });
+    }
+
+    // Create order (both artists and buyers can create orders)
     const order = await Order.create({
       buyerId: req.user._id,
       artworkId,
@@ -70,8 +77,13 @@ export const getMyOrders = async (req, res, next) => {
     const userRole = req.user.role;
 
     if (userRole === 'ARTIST') {
-      // Artists see orders for their artworks
-      query.artistId = req.user._id;
+      // Artists see both:
+      // 1. Orders they placed (as buyers)
+      // 2. Orders for their artworks (as sellers)
+      query.$or = [
+        { buyerId: req.user._id },
+        { artistId: req.user._id }
+      ];
     } else {
       // Buyers see their own orders
       query.buyerId = req.user._id;

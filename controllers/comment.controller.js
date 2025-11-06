@@ -15,7 +15,7 @@ export const getComments = async (req, res, next) => {
       artworkId: req.params.id,
       parentCommentId: null, // Only top-level comments
     })
-      .populate('userId', 'name avatar')
+      .populate('userId', '_id name avatar')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -26,7 +26,7 @@ export const getComments = async (req, res, next) => {
         const replies = await Comment.find({
           parentCommentId: comment._id,
         })
-          .populate('userId', 'name avatar')
+          .populate('userId', '_id name avatar')
           .sort({ createdAt: 1 })
           .limit(5);
 
@@ -129,6 +129,15 @@ export const deleteComment = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized to delete this comment' });
     }
 
+    // Count total comments to be deleted (parent + all replies)
+    const commentsToDelete = await Comment.find({
+      $or: [
+        { _id: comment._id },
+        { parentCommentId: comment._id },
+      ],
+    });
+    const deleteCount = commentsToDelete.length;
+
     // Delete comment and all replies
     await Comment.deleteMany({
       $or: [
@@ -137,9 +146,9 @@ export const deleteComment = async (req, res, next) => {
       ],
     });
 
-    // Update artwork comments count
+    // Update artwork comments count (decrement by actual count deleted)
     await Artwork.findByIdAndUpdate(comment.artworkId, {
-      $inc: { commentsCount: -1 },
+      $inc: { commentsCount: -deleteCount },
     });
 
     res.json({

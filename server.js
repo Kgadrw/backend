@@ -24,6 +24,10 @@ import likeRoutes from './routes/like.routes.js';
 import commentRoutes from './routes/comment.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import newsletterRoutes from './routes/newsletter.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
+import reviewRoutes from './routes/review.routes.js';
+import cartRoutes from './routes/cart.routes.js';
 
 // Connect to database (dotenv.config() already called at top)
 connectDB();
@@ -285,6 +289,10 @@ app.use('/api', likeRoutes);
 app.use('/api', commentRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Error handling middleware
 app.use(notFound);

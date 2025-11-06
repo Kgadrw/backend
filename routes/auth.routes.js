@@ -4,6 +4,7 @@ import {
   login,
   logout,
   getMe,
+  testPassword,
 } from '../controllers/auth.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -200,6 +201,9 @@ router.post('/logout', protect, logout);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/me', protect, getMe);
+
+// TEMPORARY: Test endpoint for debugging password issues
+router.post('/test-password', testPassword);
 
 export default router;
 
