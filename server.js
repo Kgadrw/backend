@@ -28,6 +28,8 @@ import newsletterRoutes from './routes/newsletter.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import cartRoutes from './routes/cart.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import verificationRoutes from './routes/verification.routes.js';
 
 // Connect to database (dotenv.config() already called at top)
 connectDB();
@@ -361,6 +363,8 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/verification', verificationRoutes);
 
 // Error handling middleware
 app.use(notFound);

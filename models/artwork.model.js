@@ -59,6 +59,10 @@ const artworkSchema = new mongoose.Schema(
       enum: ['PUBLISHED', 'SOLD', 'DRAFT'],
       default: 'PUBLISHED',
     },
+    ownershipDocument: {
+      type: String, // URL to ownership document (not visible in profile)
+      default: null,
+    },
   },
   {
     timestamps: true,

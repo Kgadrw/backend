@@ -8,6 +8,7 @@ import {
 } from '../controllers/artwork.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
 import { upload } from '../utils/cloudinary.js';
+import { uploadDocument } from '../utils/documentUpload.js';
 import Artwork from '../models/artwork.model.js';
 
 const router = express.Router();
@@ -236,6 +237,11 @@ router.post('/:id/upload', protect, authorize('ARTIST'), upload.array('images', 
       return res.status(404).json({ message: 'Artwork not found' });
     }
 
+    // Check if user owns the artwork
+    if (artwork.artistId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to upload images to this artwork' });
+    }
+
     const imageUrls = req.files.map(file => file.path);
     artwork.images = [...artwork.images, ...imageUrls];
     await artwork.save();
@@ -246,6 +252,97 @@ router.post('/:id/upload', protect, authorize('ARTIST'), upload.array('images', 
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Ownership document upload route
+router.post('/:id/ownership-document', protect, authorize('ARTIST'), uploadDocument.single('document'), async (req, res) => {
+  try {
+    const artwork = await Artwork.findById(req.params.id);
+    if (!artwork) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Artwork not found' 
+      });
+    }
+
+    // Check if user owns the artwork
+    if (artwork.artistId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Not authorized to upload ownership document for this artwork' 
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Document file is required' 
+      });
+    }
+
+    artwork.ownershipDocument = req.file.path;
+    await artwork.save();
+
+    res.json({
+      success: true,
+      data: { 
+        artwork: {
+          _id: artwork._id,
+          ownershipDocument: artwork.ownershipDocument,
+        }
+      },
+      message: 'Ownership document uploaded successfully',
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
+  }
+});
+
+// Download ownership document (owner or admin only)
+router.get('/:id/ownership-document', protect, async (req, res) => {
+  try {
+    const artwork = await Artwork.findById(req.params.id);
+    if (!artwork) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Artwork not found' 
+      });
+    }
+
+    if (!artwork.ownershipDocument) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Ownership document not found' 
+      });
+    }
+
+    // Check if user is owner or admin
+    const isOwner = artwork.artistId.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Not authorized to download this document' 
+      });
+    }
+
+    // Redirect to Cloudinary URL for download
+    res.json({
+      success: true,
+      data: {
+        downloadUrl: artwork.ownershipDocument,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
   }
 });
 

@@ -49,6 +49,7 @@ export const getArtworks = async (req, res, next) => {
 
     const artworks = await Artwork.find(query)
       .populate('artistId', '_id name avatar')
+      .select('-ownershipDocument') // Exclude ownership document from public listings
       .sort(sort)
       .skip(skip)
       .limit(limit);
@@ -86,9 +87,20 @@ export const getArtwork = async (req, res, next) => {
       return res.status(404).json({ message: 'Artwork not found' });
     }
 
+    // Convert to object
+    const artworkObj = artwork.toObject();
+    
+    // Only include ownershipDocument if user is the owner or admin
+    const isOwner = req.user && artwork.artistId._id.toString() === req.user._id.toString();
+    const isAdmin = req.user && req.user.role === 'ADMIN';
+    
+    if (!isOwner && !isAdmin) {
+      delete artworkObj.ownershipDocument;
+    }
+
     res.json({
       success: true,
-      data: artwork,
+      data: artworkObj,
     });
   } catch (error) {
     next(error);
