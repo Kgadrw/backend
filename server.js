@@ -253,12 +253,25 @@ app.get('/', (req, res) => {
 });
 
 // Swagger Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'INDATWA ART API Documentation',
-  customCssUrl: null,
-  explorer: true,
-}));
+// Serve Swagger UI at /api-docs
+// Note: swaggerUi.serve serves the static files, swaggerUi.setup sets up the UI
+// Using array syntax for multiple middleware functions
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'INDATWA ART API Documentation',
+    explorer: true,
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      docExpansion: 'list',
+      filter: true,
+      showRequestHeaders: true,
+    },
+  })
+);
 
 // Swagger JSON endpoint
 app.get('/api-docs.json', (req, res) => {
