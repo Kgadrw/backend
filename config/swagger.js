@@ -17,12 +17,12 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:5000',
-        description: 'Development server',
+        url: 'https://backend-hx8h.onrender.com',
+        description: 'Deployed server (Render)',
       },
       {
-        url: process.env.API_URL || process.env.RENDER_EXTERNAL_URL || 'https://your-backend.onrender.com',
-        description: 'Production server (Render)',
+        url: 'http://localhost:5000',
+        description: 'Local development server',
       },
     ],
     components: {
