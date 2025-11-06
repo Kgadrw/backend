@@ -232,11 +232,39 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
+// Root route - redirect to API docs or health check
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Art Marketplace API',
+    version: '1.0.0',
+    documentation: `${req.protocol}://${req.get('host')}/api-docs`,
+    health: `${req.protocol}://${req.get('host')}/api/health`,
+    endpoints: {
+      auth: '/api/auth',
+      artists: '/api/artists',
+      artworks: '/api/artworks',
+      orders: '/api/orders',
+      cart: '/api/cart',
+      analytics: '/api/analytics',
+      reviews: '/api/reviews',
+    },
+  });
+});
+
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Art Marketplace API Documentation',
+  customSiteTitle: 'INDATWA ART API Documentation',
+  customCssUrl: null,
+  explorer: true,
 }));
+
+// Swagger JSON endpoint
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // Health check
 /**

@@ -4,12 +4,12 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Art Marketplace API',
+      title: 'INDATWA ART API',
       version: '1.0.0',
-      description: 'A comprehensive REST API for an art marketplace platform built with Node.js, Express, and MongoDB.',
+      description: 'A comprehensive REST API for INDATWA ART marketplace platform built with Node.js, Express, and MongoDB. This API provides endpoints for managing artworks, artists, orders, cart, analytics, and more.',
       contact: {
         name: 'API Support',
-        email: 'support@artmarketplace.com',
+        email: process.env.SUPPORT_EMAIL || 'support@indatwaart.com',
       },
       license: {
         name: 'ISC',
@@ -21,8 +21,8 @@ const options = {
         description: 'Development server',
       },
       {
-        url: 'https://api.artmarketplace.com',
-        description: 'Production server',
+        url: process.env.API_URL || process.env.RENDER_EXTERNAL_URL || 'https://your-backend.onrender.com',
+        description: 'Production server (Render)',
       },
     ],
     components: {
@@ -198,10 +198,6 @@ const options = {
         description: 'User authentication endpoints',
       },
       {
-        name: 'Users',
-        description: 'User management endpoints',
-      },
-      {
         name: 'Artists',
         description: 'Artist profile management endpoints',
       },
@@ -214,6 +210,10 @@ const options = {
         description: 'Order management endpoints',
       },
       {
+        name: 'Cart',
+        description: 'Shopping cart endpoints',
+      },
+      {
         name: 'Likes',
         description: 'Artwork likes endpoints',
       },
@@ -224,6 +224,22 @@ const options = {
       {
         name: 'Notifications',
         description: 'Notification endpoints',
+      },
+      {
+        name: 'Newsletter',
+        description: 'Newsletter subscription endpoints',
+      },
+      {
+        name: 'Analytics',
+        description: 'Analytics and page view tracking endpoints',
+      },
+      {
+        name: 'Reviews',
+        description: 'Artwork review endpoints',
+      },
+      {
+        name: 'Health',
+        description: 'Health check endpoints',
       },
     ],
   },
