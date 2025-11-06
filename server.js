@@ -254,24 +254,24 @@ app.get('/', (req, res) => {
 
 // Swagger Documentation
 // Serve Swagger UI at /api-docs
-// Note: swaggerUi.serve serves the static files, swaggerUi.setup sets up the UI
-// Using array syntax for multiple middleware functions
-app.use(
-  '/api-docs',
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec, {
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'INDATWA ART API Documentation',
-    explorer: true,
-    swaggerOptions: {
-      persistAuthorization: true,
-      displayRequestDuration: true,
-      docExpansion: 'list',
-      filter: true,
-      showRequestHeaders: true,
-    },
-  })
-);
+// Important: swaggerUi.serve handles static assets, swaggerUi.setup creates the UI
+const swaggerUiOptions = {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'INDATWA ART API Documentation',
+  explorer: true,
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    docExpansion: 'list',
+    filter: true,
+    showRequestHeaders: true,
+    tryItOutEnabled: true,
+  },
+};
+
+// Set up Swagger UI - serve static files first, then setup the UI
+app.use('/api-docs', swaggerUi.serve);
+app.get('/api-docs', swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 // Swagger JSON endpoint
 app.get('/api-docs.json', (req, res) => {
