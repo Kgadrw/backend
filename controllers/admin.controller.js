@@ -25,8 +25,6 @@ export const getAdminStats = async (req, res, next) => {
       totalReviews,
       totalNotifications,
       totalPageViews,
-      recentUsers,
-      recentOrders,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: 'ARTIST' }),
@@ -38,9 +36,48 @@ export const getAdminStats = async (req, res, next) => {
       Review.countDocuments(),
       Notification.countDocuments(),
       PageView.countDocuments(),
-      User.find().sort({ createdAt: -1 }).limit(5).select('name email role createdAt'),
-      Order.find().sort({ createdAt: -1 }).limit(5).populate('buyerId', 'name email').populate('artworkId', 'title'),
     ]);
+
+    // Get recent users
+    const recentUsers = await User.find().sort({ createdAt: -1 }).limit(5).select('name email role createdAt');
+    
+    // Get recent orders with safe population (handle deleted artworks)
+    const recentOrdersRaw = await Order.find().sort({ createdAt: -1 }).limit(5).lean();
+    const recentOrders = await Promise.all(
+      recentOrdersRaw.map(async (order) => {
+        try {
+          // Populate buyer
+          if (order.buyerId) {
+            const buyer = await User.findById(order.buyerId).select('name email').lean();
+            if (buyer) {
+              order.buyerId = buyer;
+            }
+          }
+          
+          // Populate artwork (handle deleted artworks gracefully)
+          if (order.artworkId) {
+            try {
+              const artwork = await Artwork.findById(order.artworkId).select('title').lean();
+              if (artwork) {
+                order.artworkId = artwork;
+              } else {
+                // Artwork was deleted, set to null
+                order.artworkId = null;
+              }
+            } catch (error) {
+              // If artwork doesn't exist, set to null
+              order.artworkId = null;
+            }
+          }
+          
+          return order;
+        } catch (error) {
+          // If populate fails, return order with basic info
+          console.error('Error populating order:', error);
+          return order;
+        }
+      })
+    );
 
     // Calculate revenue
     const completedOrders = await Order.find({ status: 'COMPLETED' });
