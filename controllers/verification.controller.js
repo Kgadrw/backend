@@ -98,6 +98,9 @@ export const getVerificationStatus = async (req, res, next) => {
       });
     }
 
+    // Populate admin comments
+    await verificationRequest.populate('adminComments.commentedBy', 'name email');
+
     res.json({
       success: true,
       data: {
@@ -109,6 +112,7 @@ export const getVerificationStatus = async (req, res, next) => {
           reviewedBy: verificationRequest.reviewedBy,
           rejectionReason: verificationRequest.rejectionReason,
           notes: verificationRequest.notes,
+          adminComments: verificationRequest.adminComments || [],
           documents: verificationRequest.documents,
         },
       },
@@ -165,7 +169,8 @@ export const getVerificationRequest = async (req, res, next) => {
   try {
     const request = await VerificationRequest.findById(req.params.id)
       .populate('userId', 'name email role avatar createdAt')
-      .populate('reviewedBy', 'name email');
+      .populate('reviewedBy', 'name email')
+      .populate('adminComments.commentedBy', 'name email');
 
     if (!request) {
       return res.status(404).json({
@@ -279,6 +284,53 @@ export const rejectVerificationRequest = async (req, res, next) => {
       success: true,
       data: { request },
       message: 'Verification request rejected',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Add admin comment to verification request
+// @route   POST /api/admin/verification-requests/:id/comments
+// @access  Private (Admin only)
+export const addAdminComment = async (req, res, next) => {
+  try {
+    const { comment } = req.body;
+
+    if (!comment || !comment.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Comment is required',
+      });
+    }
+
+    const request = await VerificationRequest.findById(req.params.id);
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Verification request not found',
+      });
+    }
+
+    // Add comment
+    request.adminComments.push({
+      comment: comment.trim(),
+      commentedBy: req.user._id,
+      commentedAt: new Date(),
+    });
+
+    await request.save();
+
+    // Populate the new comment
+    await request.populate('adminComments.commentedBy', 'name email');
+
+    res.json({
+      success: true,
+      data: {
+        comment: request.adminComments[request.adminComments.length - 1],
+      },
+      message: 'Comment added successfully',
     });
   } catch (error) {
     next(error);

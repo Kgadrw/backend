@@ -49,6 +49,23 @@ const verificationRequestSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    adminComments: [
+      {
+        comment: {
+          type: String,
+          required: true,
+        },
+        commentedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        commentedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

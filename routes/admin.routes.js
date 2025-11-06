@@ -20,6 +20,7 @@ import {
   getVerificationRequest,
   approveVerificationRequest,
   rejectVerificationRequest,
+  addAdminComment,
 } from '../controllers/verification.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
 
@@ -55,6 +56,7 @@ router.get('/verification-requests', getAllVerificationRequests);
 router.get('/verification-requests/:id', getVerificationRequest);
 router.put('/verification-requests/:id/approve', approveVerificationRequest);
 router.put('/verification-requests/:id/reject', rejectVerificationRequest);
+router.post('/verification-requests/:id/comments', addAdminComment);
 
 // Admin profile management
 router.get('/profile', getAdminProfile);
