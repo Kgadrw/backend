@@ -38,16 +38,24 @@ const app = express();
 // Create HTTP server
 const httpServer = createServer(app);
 
-// Initialize Socket.io
+// Initialize Socket.io with CORS
+const socketCorsOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+  : process.env.NODE_ENV === 'production' 
+    ? []
+    : ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000'];
+
 const io = new Server(httpServer, {
   cors: {
     origin: function (origin, callback) {
-      const allowedOrigins = process.env.FRONTEND_URL 
-        ? process.env.FRONTEND_URL.split(',')
-        : ['http://localhost:5173', 'http://localhost:8080'];
+      if (!origin) return callback(null, true);
       
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
+      if (process.env.NODE_ENV === 'production') {
+        if (socketCorsOrigins.length === 0 || socketCorsOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
       } else {
         callback(null, true); // Allow all origins in development
       }
@@ -83,23 +91,42 @@ io.on('connection', (socket) => {
 });
 
 // Middleware
-app.use(cors({
+// CORS configuration for production deployment
+const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // Allow requests with no origin (mobile apps, curl, Postman, etc.)
     if (!origin) return callback(null, true);
     
+    // Get allowed origins from environment variables
     const allowedOrigins = process.env.FRONTEND_URL 
-      ? process.env.FRONTEND_URL.split(',')
-      : ['http://localhost:5173', 'http://localhost:8080'];
+      ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+      : process.env.NODE_ENV === 'production' 
+        ? [] // In production, require FRONTEND_URL to be set
+        : ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000'];
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
+    // In production, strictly enforce allowed origins
+    if (process.env.NODE_ENV === 'production') {
+      if (allowedOrigins.length === 0) {
+        console.warn('WARNING: FRONTEND_URL not set in production. Allowing all origins for now.');
+        return callback(null, true);
+      }
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.warn(`CORS: Origin ${origin} not allowed. Allowed origins: ${allowedOrigins.join(', ')}`);
+        callback(new Error('Not allowed by CORS'));
+      }
     } else {
-      callback(null, true); // Allow all origins in development
+      // In development, allow all origins
+      callback(null, true);
     }
   },
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
