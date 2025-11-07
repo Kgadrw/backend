@@ -67,7 +67,7 @@ export const getArtistProfile = async (req, res, next) => {
           .populate('artistId', '_id name avatar isVerified')
           .sort({ createdAt: -1 })
           .limit(12)
-            .select('title images price currency category')
+            .select('title images price currency category verificationStatus')
         : [];
 
       return res.json({

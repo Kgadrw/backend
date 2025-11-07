@@ -63,6 +63,25 @@ const artworkSchema = new mongoose.Schema(
       type: String, // URL to ownership document (not visible in profile)
       default: null,
     },
+    verificationStatus: {
+      type: String,
+      enum: ['UNVERIFIED', 'PENDING', 'VERIFIED', 'REJECTED'],
+      default: 'UNVERIFIED',
+    },
+    verificationNotes: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    verifiedAt: {
+      type: Date,
+      default: null,
+    },
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
   {
     timestamps: true,

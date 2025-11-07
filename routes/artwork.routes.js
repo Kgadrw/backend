@@ -282,6 +282,10 @@ router.post('/:id/ownership-document', protect, authorize('ARTIST'), uploadDocum
     }
 
     artwork.ownershipDocument = req.file.path;
+    artwork.verificationStatus = 'PENDING';
+    artwork.verificationNotes = null;
+    artwork.verifiedAt = null;
+    artwork.verifiedBy = null;
     await artwork.save();
 
     res.json({

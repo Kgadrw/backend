@@ -8,6 +8,7 @@ import {
   getAllArtworks,
   updateArtwork,
   deleteArtwork,
+  updateArtworkVerification,
   getAllOrders,
   updateOrder,
   getAllActivities,
@@ -42,6 +43,7 @@ router.delete('/users/:id', deleteUser);
 // Artwork management
 router.get('/artworks', getAllArtworks);
 router.put('/artworks/:id', updateArtwork);
+router.put('/artworks/:id/verify', updateArtworkVerification);
 router.delete('/artworks/:id', deleteArtwork);
 
 // Order management

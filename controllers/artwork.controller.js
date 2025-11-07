@@ -221,6 +221,13 @@ export const updateArtwork = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized to update this artwork' });
     }
 
+    const protectedFields = ['verificationStatus', 'verificationNotes', 'verifiedAt', 'verifiedBy', 'ownershipDocument'];
+    protectedFields.forEach((field) => {
+      if (field in req.body) {
+        delete req.body[field];
+      }
+    });
+
     artwork = await Artwork.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,

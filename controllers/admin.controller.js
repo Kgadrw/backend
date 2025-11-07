@@ -177,7 +177,7 @@ export const getUserById = async (req, res, next) => {
 
     // Get user activities
     const [artworks, orders, likes, comments, reviews, notifications] = await Promise.all([
-      Artwork.find({ artistId: user._id }).select('title price status createdAt'),
+      Artwork.find({ artistId: user._id }).select('title price status createdAt verificationStatus'),
       Order.find({ $or: [{ buyerId: user._id }, { artistId: user._id }] })
         .populate('artworkId', 'title')
         .populate('buyerId', 'name email')
@@ -310,11 +310,13 @@ export const getAllArtworks = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const status = req.query.status;
+    const verificationStatus = req.query.verificationStatus;
     const search = req.query.search;
     const skip = (page - 1) * limit;
 
     const query = {};
     if (status) query.status = status;
+    if (verificationStatus) query.verificationStatus = verificationStatus;
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -325,6 +327,7 @@ export const getAllArtworks = async (req, res, next) => {
     const [artworks, total] = await Promise.all([
       Artwork.find(query)
         .populate('artistId', 'name email')
+        .populate('verifiedBy', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -371,6 +374,73 @@ export const updateArtwork = async (req, res, next) => {
     res.json({
       success: true,
       data: { artwork },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update artwork verification status
+// @route   PUT /api/admin/artworks/:id/verify
+// @access  Private (Admin only)
+export const updateArtworkVerification = async (req, res, next) => {
+  try {
+    const { action, notes } = req.body;
+
+    const allowedActions = ['APPROVE', 'REJECT', 'RESET'];
+    if (!action || !allowedActions.includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Allowed actions are APPROVE, REJECT, or RESET.',
+      });
+    }
+
+    const artwork = await Artwork.findById(req.params.id).populate('artistId', 'name email');
+
+    if (!artwork) {
+      return res.status(404).json({
+        success: false,
+        message: 'Artwork not found',
+      });
+    }
+
+    if (action === 'APPROVE' || action === 'REJECT') {
+      if (!artwork.ownershipDocument) {
+        return res.status(400).json({
+          success: false,
+          message: 'Artwork must have an ownership document before it can be verified.',
+        });
+      }
+    }
+
+    const sanitizedNotes = typeof notes === 'string' && notes.trim().length > 0 ? notes.trim() : null;
+
+    if (action === 'APPROVE') {
+      artwork.verificationStatus = 'VERIFIED';
+      artwork.verificationNotes = sanitizedNotes;
+      artwork.verifiedAt = new Date();
+      artwork.verifiedBy = req.user._id;
+    } else if (action === 'REJECT') {
+      artwork.verificationStatus = 'REJECTED';
+      artwork.verificationNotes = sanitizedNotes;
+      artwork.verifiedAt = null;
+      artwork.verifiedBy = null;
+    } else if (action === 'RESET') {
+      artwork.verificationStatus = artwork.ownershipDocument ? 'PENDING' : 'UNVERIFIED';
+      artwork.verificationNotes = sanitizedNotes;
+      artwork.verifiedAt = null;
+      artwork.verifiedBy = null;
+    }
+
+    await artwork.save();
+    await artwork.populate('verifiedBy', 'name email');
+
+    res.json({
+      success: true,
+      data: {
+        artwork,
+      },
+      message: 'Artwork verification updated successfully',
     });
   } catch (error) {
     next(error);
