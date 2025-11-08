@@ -1,5 +1,6 @@
 import User from '../models/user.model.js';
 import ArtistProfile from '../models/artist.model.js';
+import Notification from '../models/notification.model.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
@@ -223,6 +224,10 @@ export const logout = async (req, res, next) => {
 export const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
+    const unreadCount = await Notification.countDocuments({
+      userId: req.user._id,
+      isRead: false,
+    });
 
     res.json({
       success: true,
@@ -235,6 +240,8 @@ export const getMe = async (req, res, next) => {
           avatar: user.avatar,
           isVerified: user.isVerified,
           createdAt: user.createdAt,
+          following: (user.following || []).map((id) => id.toString()),
+          unreadNotifications: unreadCount,
         },
       },
     });

@@ -3,8 +3,9 @@ import {
   getComments,
   addComment,
   deleteComment,
+  toggleCommentLike,
 } from '../controllers/comment.controller.js';
-import { protect } from '../middlewares/auth.middleware.js';
+import { protect, optionalAuth } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ const router = express.Router();
  *       200:
  *         description: Comments retrieved successfully
  */
-router.get('/artworks/:id/comments', getComments);
+router.get('/artworks/:id/comments', optionalAuth, getComments);
 
 /**
  * @swagger
@@ -83,6 +84,7 @@ router.post('/artworks/:id/comments', protect, addComment);
  *       403:
  *         description: Not authorized to delete this comment
  */
+router.post('/comments/:id/like', protect, toggleCommentLike);
 router.delete('/comments/:id', protect, deleteComment);
 
 export default router;

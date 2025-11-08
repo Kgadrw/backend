@@ -2,6 +2,7 @@ import Artwork from '../models/artwork.model.js';
 import ArtistProfile from '../models/artist.model.js';
 import Newsletter from '../models/newsletter.model.js';
 import { sendNewArtworkEmail } from '../utils/emailService.js';
+import { createNotification } from '../utils/notificationHelper.js';
 
 // @desc    Get all artworks
 // @route   GET /api/artworks
@@ -51,6 +52,60 @@ export const getArtworks = async (req, res, next) => {
       .populate('artistId', '_id name avatar isVerified')
       .select('-ownershipDocument') // Exclude ownership document from public listings
       .sort(sort)
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Artwork.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: {
+        artworks,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFollowingFeed = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 12, 50);
+    const skip = (page - 1) * limit;
+
+    const followingIds = req.user.following || [];
+
+    if (!followingIds.length) {
+      return res.json({
+        success: true,
+        data: {
+          artworks: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            pages: 0,
+          },
+        },
+      });
+    }
+
+    const query = {
+      status: 'PUBLISHED',
+      artistId: { $in: followingIds },
+    };
+
+    const artworks = await Artwork.find(query)
+      .populate('artistId', '_id name avatar isVerified')
+      .select('-ownershipDocument')
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -150,8 +205,36 @@ export const createArtwork = async (req, res, next) => {
       'name avatar'
     );
 
-    // Send email notifications to newsletter subscribers (async, don't wait)
     if (populatedArtwork.status === 'PUBLISHED') {
+      const artistFollowers = await ArtistProfile.findOne({
+        userId: req.user._id,
+      }).select('followers');
+
+      if (artistFollowers?.followers?.length) {
+        const followerNotifications = artistFollowers.followers
+          .filter(
+            (followerId) => followerId.toString() !== req.user._id.toString()
+          )
+          .map((followerId) =>
+            createNotification(
+              followerId,
+              'ARTWORK',
+              `${populatedArtwork.artistId?.name || 'An artist'} published "${populatedArtwork.title}"`,
+              {
+                artworkId: populatedArtwork._id.toString(),
+                artistId: req.user._id.toString(),
+              }
+            )
+          );
+
+        if (followerNotifications.length) {
+          Promise.allSettled(followerNotifications).catch((error) =>
+            console.error('Error sending follower notifications:', error)
+          );
+        }
+      }
+
+      // Send email notifications to newsletter subscribers (async, don't wait)
       console.log('📧 Starting email notification process for new artwork...');
       Newsletter.find({ isActive: true })
         .then((subscribers) => {

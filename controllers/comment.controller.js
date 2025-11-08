@@ -10,17 +10,31 @@ export const getComments = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
+    const viewerId = req.user?._id?.toString() || null;
 
     const comments = await Comment.find({
       artworkId: req.params.id,
-      parentCommentId: null, // Only top-level comments
+      parentCommentId: null,
     })
       .populate('userId', '_id name avatar')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
-    // Get replies for each comment
+    const formatWithLikes = (doc) => {
+      const likes = doc.likes || [];
+      const isLiked = viewerId
+        ? likes.some((likeId) => likeId?.toString() === viewerId)
+        : false;
+      const { likes: _ignoredLikes, ...rest } = doc;
+      return {
+        ...rest,
+        likesCount: likes.length,
+        isLiked,
+      };
+    };
+
     const commentsWithReplies = await Promise.all(
       comments.map(async (comment) => {
         const replies = await Comment.find({
@@ -28,11 +42,12 @@ export const getComments = async (req, res, next) => {
         })
           .populate('userId', '_id name avatar')
           .sort({ createdAt: 1 })
-          .limit(5);
+          .limit(5)
+          .lean();
 
         return {
-          ...comment.toObject(),
-          replies,
+          ...formatWithLikes(comment),
+          replies: replies.map((reply) => formatWithLikes(reply)),
         };
       })
     );
@@ -104,6 +119,26 @@ export const addComment = async (req, res, next) => {
       );
     }
 
+    if (parentCommentId) {
+      const parentComment = await Comment.findById(parentCommentId);
+      if (
+        parentComment &&
+        parentComment.userId.toString() !== req.user._id.toString()
+      ) {
+        await createNotification(
+          parentComment.userId,
+          'COMMENT',
+          `${req.user.name} replied to your comment`,
+          {
+            artworkId,
+            commentId: comment._id.toString(),
+            parentCommentId: parentCommentId.toString(),
+            userId: req.user._id.toString(),
+          }
+        );
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: populatedComment,
@@ -154,6 +189,54 @@ export const deleteComment = async (req, res, next) => {
     res.json({
       success: true,
       message: 'Comment deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const toggleCommentLike = async (req, res, next) => {
+  try {
+    const comment = await Comment.findById(req.params.id);
+
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    const userId = req.user._id.toString();
+    const hasLiked = (comment.likes || []).some(
+      (likeId) => likeId.toString() === userId
+    );
+
+    if (hasLiked) {
+      comment.likes = comment.likes.filter(
+        (likeId) => likeId.toString() !== userId
+      );
+    } else {
+      comment.likes = [...(comment.likes || []), req.user._id];
+    }
+
+    await comment.save();
+
+    if (!hasLiked && comment.userId.toString() !== userId) {
+      await createNotification(
+        comment.userId,
+        'LIKE',
+        `${req.user.name} reacted to your comment`,
+        {
+          commentId: comment._id.toString(),
+          artworkId: comment.artworkId.toString(),
+          userId,
+        }
+      );
+    }
+
+    res.json({
+      success: true,
+      data: {
+        isLiked: !hasLiked,
+        likesCount: comment.likes.length,
+      },
     });
   } catch (error) {
     next(error);

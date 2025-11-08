@@ -52,6 +52,20 @@ const artistProfileSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    cv: {
+      url: {
+        type: String,
+        default: null,
+      },
+      filename: {
+        type: String,
+        default: null,
+      },
+      uploadedAt: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,

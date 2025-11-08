@@ -22,6 +22,12 @@ const commentSchema = new mongoose.Schema(
       ref: 'Comment',
       default: null,
     },
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   {
     timestamps: true,
@@ -31,6 +37,7 @@ const commentSchema = new mongoose.Schema(
 // Indexes for efficient queries
 commentSchema.index({ artworkId: 1, createdAt: -1 });
 commentSchema.index({ parentCommentId: 1 });
+commentSchema.index({ likes: 1 });
 
 const Comment = mongoose.model('Comment', commentSchema);
 

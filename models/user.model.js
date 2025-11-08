@@ -51,6 +51,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    following: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      ],
+      default: [],
+    },
   },
   {
     timestamps: true,
@@ -60,6 +69,7 @@ const userSchema = new mongoose.Schema(
 // Indexes
 userSchema.index({ email: 1 });
 userSchema.index({ token: 1 });
+userSchema.index({ following: 1 });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {

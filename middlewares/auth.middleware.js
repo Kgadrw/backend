@@ -63,3 +63,33 @@ export const authorize = (...roles) => {
   };
 };
 
+export const optionalAuth = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (
+    !authHeader ||
+    (authHeader && authHeader.trim().length === 0)
+  ) {
+    return next();
+  }
+
+  let token = authHeader.startsWith('Bearer')
+    ? authHeader.split(' ')[1]
+    : authHeader;
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const user = await User.findOne({ token });
+    if (user) {
+      req.user = user;
+    }
+  } catch (error) {
+    console.error('Optional auth error:', error);
+  }
+
+  next();
+};
+

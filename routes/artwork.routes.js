@@ -5,6 +5,7 @@ import {
   createArtwork,
   updateArtwork,
   deleteArtwork,
+  getFollowingFeed,
 } from '../controllers/artwork.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
 import { upload } from '../utils/cloudinary.js';
@@ -75,6 +76,71 @@ const router = express.Router();
  *                       type: object
  */
 router.get('/', getArtworks);
+
+/**
+ * @swagger
+ * /api/artworks/feed:
+ *   get:
+ *     summary: Get artworks from followed artists
+ *     tags: [Artworks]
+ *     description: Retrieve a list of artworks from artists the current user follows, with optional filtering, sorting, and pagination
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 12
+ *         description: Number of items per page
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: artistId
+ *         schema:
+ *           type: string
+ *         description: Filter by artist ID
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by title or description
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [popular, newest, price-asc, price-desc]
+ *         description: Sort order
+ *     responses:
+ *       200:
+ *         description: List of artworks retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     artworks:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Artwork'
+ *                     pagination:
+ *                       type: object
+ */
+router.get('/feed', protect, getFollowingFeed);
 
 /**
  * @swagger
