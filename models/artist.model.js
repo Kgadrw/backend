@@ -70,6 +70,20 @@ const artistProfileSchema = new mongoose.Schema(
         default: null,
       },
     },
+    customLinks: [
+      {
+        label: {
+          type: String,
+          trim: true,
+          default: '',
+        },
+        url: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

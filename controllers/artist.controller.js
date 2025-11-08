@@ -189,6 +189,7 @@ export const getArtistProfile = async (req, res, next) => {
           followingCount,
           isFollowing,
           isOwner,
+          customLinks: [],
         },
       });
     }
@@ -207,6 +208,7 @@ export const updateArtistProfile = async (req, res, next) => {
       location,
       phone,
       socialLinks,
+      customLinks,
       bannerImage,
       avatar,
     } = req.body;
@@ -234,6 +236,7 @@ export const updateArtistProfile = async (req, res, next) => {
         phone,
         socialLinks,
         bannerImage,
+        customLinks: Array.isArray(customLinks) ? sanitizeCustomLinks(customLinks) : [],
       });
     } else {
       // Update existing profile
@@ -247,6 +250,10 @@ export const updateArtistProfile = async (req, res, next) => {
           ...artistProfile.socialLinks,
           ...socialLinks,
         };
+      }
+
+      if (Array.isArray(customLinks)) {
+        artistProfile.customLinks = sanitizeCustomLinks(customLinks);
       }
 
       await artistProfile.save();
@@ -263,6 +270,16 @@ export const updateArtistProfile = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+const sanitizeCustomLinks = (links = []) => {
+  return links
+    .filter((link) => link && typeof link.url === 'string' && link.url.trim().length > 0)
+    .map((link) => ({
+      label: typeof link.label === 'string' ? link.label.trim() : '',
+      url: link.url.trim(),
+    }))
+    .slice(0, 10);
 };
 
 // @desc    Get artist's artworks
