@@ -28,6 +28,15 @@ import {
   adminReviewExhibition,
   adminToggleExhibitionPromotion,
 } from '../controllers/exhibition.controller.js';
+import {
+  createNewsletterTemplate,
+  getNewsletterTemplates,
+  getNewsletterTemplate,
+  updateNewsletterTemplate,
+  deleteNewsletterTemplate,
+  sendNewsletterTemplate,
+  getNewsletterSendLogs,
+} from '../controllers/newsletterTemplate.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
@@ -55,6 +64,15 @@ router.delete('/artworks/:id', deleteArtwork);
 router.get('/exhibitions', adminGetExhibitions);
 router.put('/exhibitions/:id/review', adminReviewExhibition);
 router.put('/exhibitions/:id/promotion', adminToggleExhibitionPromotion);
+
+// Newsletter template management
+router.get('/newsletter/templates', getNewsletterTemplates);
+router.post('/newsletter/templates', createNewsletterTemplate);
+router.get('/newsletter/templates/:id', getNewsletterTemplate);
+router.put('/newsletter/templates/:id', updateNewsletterTemplate);
+router.delete('/newsletter/templates/:id', deleteNewsletterTemplate);
+router.post('/newsletter/templates/:id/send', sendNewsletterTemplate);
+router.get('/newsletter/logs', getNewsletterSendLogs);
 
 // Order management
 router.get('/orders', getAllOrders);

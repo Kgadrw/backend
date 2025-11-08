@@ -185,3 +185,17 @@ export const sendNewArtworkEmail = async (email, artwork, artistName) => {
   }
 };
 
+export const sendCustomEmail = async ({ to, subject, html, text }) => {
+  const transporter = createTransporter();
+
+  const mailOptions = {
+    from: `"INDATWA ART" <${getSenderEmail()}>`,
+    to,
+    subject,
+    html,
+    text,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
+
