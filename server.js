@@ -30,6 +30,7 @@ import reviewRoutes from './routes/review.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import verificationRoutes from './routes/verification.routes.js';
+import exhibitionRoutes from './routes/exhibition.routes.js';
 
 // Connect to database (dotenv.config() already called at top)
 connectDB();
@@ -365,6 +366,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/verification', verificationRoutes);
+app.use('/api/exhibitions', exhibitionRoutes);
 
 // Error handling middleware
 app.use(notFound);

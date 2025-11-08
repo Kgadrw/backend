@@ -23,6 +23,11 @@ import {
   rejectVerificationRequest,
   addAdminComment,
 } from '../controllers/verification.controller.js';
+import {
+  adminGetExhibitions,
+  adminReviewExhibition,
+  adminToggleExhibitionPromotion,
+} from '../controllers/exhibition.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
@@ -45,6 +50,11 @@ router.get('/artworks', getAllArtworks);
 router.put('/artworks/:id', updateArtwork);
 router.put('/artworks/:id/verify', updateArtworkVerification);
 router.delete('/artworks/:id', deleteArtwork);
+
+// Exhibition management
+router.get('/exhibitions', adminGetExhibitions);
+router.put('/exhibitions/:id/review', adminReviewExhibition);
+router.put('/exhibitions/:id/promotion', adminToggleExhibitionPromotion);
 
 // Order management
 router.get('/orders', getAllOrders);
