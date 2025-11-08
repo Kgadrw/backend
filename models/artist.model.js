@@ -21,6 +21,10 @@ const artistProfileSchema = new mongoose.Schema(
       default: '',
     },
     socialLinks: {
+      website: {
+        type: String,
+        default: '',
+      },
       instagram: {
         type: String,
         default: '',
